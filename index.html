@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>粉嫩兔子鑽洞趣</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            /* 背景改為淺粉色 */
+            background-color: #FFF0F5; 
+            color: #FF69B4; 
+            overflow: hidden;
+        }
+
+        h1 {
+            color: #FF85A2; /* 粉紅標題 */
+            margin-bottom: 20px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.05);
+        }
+
+        #game-info {
+            display: flex;
+            justify-content: space-around;
+            width: 300px;
+            margin-bottom: 30px;
+            font-size: 1.5em;
+            color: #FFFFFF; 
+            background-color: #FFB6C1; /* 淺粉紅底 */
+            padding: 10px 20px;
+            border-radius: 20px;
+            box-shadow: 0 4px 8px rgba(255, 182, 193, 0.4);
+        }
+
+        #game-board {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            grid-template-rows: repeat(3, 100px);
+            gap: 15px;
+            background-color: #FFC0CB; /* 粉紅地盤 */
+            padding: 25px;
+            border-radius: 25px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        .hole {
+            width: 100px;
+            height: 100px;
+            background-color: #F8BBD0; /* 洞口深粉色 */
+            border-radius: 50%;
+            display: flex;
+            align-items: flex-end; 
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+            cursor: pointer;
+            border: 4px solid #F48FB1; 
+            box-sizing: border-box;
+            box-shadow: inset 0 8px 10px rgba(0,0,0,0.1);
+        }
+
+        /* --- 兔子圖樣 (純 CSS 繪製) --- */
+        .mole {
+            width: 70px;
+            height: 70px;
+            background-color: #FFFFFF; /* 兔子身體白色 */
+            border-radius: 50% 50% 45% 45%;
+            position: absolute;
+            bottom: -90px; 
+            transition: bottom 0.2s ease-out;
+            pointer-events: none;
+            display: flex;
+            justify-content: center;
+            box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
+        }
+
+        /* 兔子的耳朵 */
+        .mole::before, .mole::after {
+            content: '';
+            position: absolute;
+            top: -25px;
+            width: 18px;
+            height: 35px;
+            background-color: #FFFFFF;
+            border-radius: 50% 50% 0 0;
+            border-top: 5px solid #FFC0CB; /* 耳朵內粉色線條感 */
+        }
+        .mole::before { left: 12px; transform: rotate(-10deg); }
+        .mole::after { right: 12px; transform: rotate(10deg); }
+
+        /* 兔子的眼睛與鼻子 */
+        .mole-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+        .mole-inner::before { /* 眼睛 */
+            content: '..';
+            position: absolute;
+            top: 15px;
+            left: 22px;
+            color: #FF85A2;
+            font-weight: bold;
+            font-size: 25px;
+            letter-spacing: 8px;
+        }
+        .mole-inner::after { /* 鼻子 */
+            content: 'v';
+            position: absolute;
+            top: 35px;
+            left: 31px;
+            color: #FFB6C1;
+            font-size: 14px;
+        }
+
+        .mole.up {
+            bottom: 5px; 
+            pointer-events: auto;
+        }
+
+        .mole.hit {
+            background-color: #FFEBEE; /* 點擊後變淡粉 */
+            transform: scale(0.8);
+            transition: all 0.1s ease-out;
+        }
+
+        #start-button {
+            padding: 12px 30px;
+            font-size: 1.5em;
+            margin-top: 30px;
+            background-color: #FF85A2; 
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(255, 133, 162, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        #start-button:hover {
+            background-color: #FF69B4;
+            transform: scale(1.05);
+        }
+
+        #game-over-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 182, 193, 0.9);
+            color: white;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 2em;
+            text-align: center;
+            z-index: 100;
+            border-radius: 20px;
+        }
+
+        #game-over-screen button {
+            margin-top: 20px;
+            padding: 10px 25px;
+            font-size: 0.8em;
+            background-color: #FFFFFF;
+            color: #FF85A2;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>🐰 兔子鑽洞趣 🐰</h1>
+
+    <div id="game-info">
+        <div id="score">分數: 0</div>
+        <div id="time-left">時間: 30</div>
+    </div>
+
+    <div id="game-board">
+        </div>
+
+    <button id="start-button">開始抓兔子</button>
+
+    <div id="game-over-screen">
+        <h2>好棒唷！</h2>
+        <p>妳抓到了 <span id="final-score">0</span> 隻兔子</p>
+        <button id="restart-button">再玩一次</button>
+    </div>
+
+    <script>
+        const gameBoard = document.getElementById('game-board');
+        const scoreDisplay = document.getElementById('score');
+        const timeLeftDisplay = document.getElementById('time-left');
+        const startButton = document.getElementById('start-button');
+        const gameOverScreen = document.getElementById('game-over-screen');
+        const finalScoreDisplay = document.getElementById('final-score');
+        const restartButton = document.getElementById('restart-button');
+
+        let score = 0;
+        let timeLeft = 30;
+        let timerId = null;
+        let moleTimerId = null;
+        let lastHole = null;
+        const holes = [];
+
+        // 生成 9 個地洞，內部包含兔子結構
+        for (let i = 0; i < 9; i++) {
+            const hole = document.createElement('div');
+            hole.classList.add('hole');
+            
+            const mole = document.createElement('div');
+            mole.classList.add('mole');
+            
+            // 增加一個容器來放兔子的五官
+            const moleInner = document.createElement('div');
+            moleInner.classList.add('mole-inner');
+            
+            mole.appendChild(moleInner);
+            hole.appendChild(mole);
+            gameBoard.appendChild(hole);
+            holes.push(hole);
+        }
+
+        function randomHole() {
+            const index = Math.floor(Math.random() * holes.length);
+            const hole = holes[index];
+            if (hole === lastHole) return randomHole();
+            lastHole = hole;
+            return hole;
+        }
+
+        function popUpMole() {
+            holes.forEach(hole => {
+                hole.querySelector('.mole').classList.remove('up', 'hit');
+            });
+
+            let randomMoleHole = randomHole();
+            let mole = randomMoleHole.querySelector('.mole');
+            mole.classList.add('up');
+
+            let popUpTime = Math.random() * 800 + 400; 
+            moleTimerId = setTimeout(() => {
+                mole.classList.remove('up');
+                if (timeLeft > 0) popUpMole();
+            }, popUpTime);
+        }
+
+        holes.forEach(hole => {
+            hole.addEventListener('mousedown', (e) => {
+                const clickedMole = hole.querySelector('.mole');
+                if (clickedMole && clickedMole.classList.contains('up')) {
+                    score++;
+                    scoreDisplay.textContent = `分數: ${score}`;
+                    clickedMole.classList.remove('up');
+                    clickedMole.classList.add('hit');
+                    clearTimeout(moleTimerId);
+                    if (timeLeft > 0) setTimeout(popUpMole, 100); 
+                }
+            });
+        });
+
+        function countdown() {
+            timeLeft--;
+            timeLeftDisplay.textContent = `時間: ${timeLeft}`;
+            if (timeLeft <= 0) {
+                clearInterval(timerId);
+                clearTimeout(moleTimerId);
+                endGame();
+            }
+        }
+
+        function startGame() {
+            score = 0;
+            timeLeft = 30;
+            scoreDisplay.textContent = `分數: ${score}`;
+            timeLeftDisplay.textContent = `時間: ${timeLeft}`;
+            startButton.style.display = 'none';
+            gameOverScreen.style.display = 'none';
+
+            timerId = setInterval(countdown, 1000);
+            popUpMole();
+        }
+
+        function endGame() {
+            finalScoreDisplay.textContent = score;
+            gameOverScreen.style.display = 'flex';
+            startButton.style.display = 'block';
+            startButton.textContent = "重新開始";
+            startButton.onclick = startGame;
+        }
+
+        startButton.addEventListener('click', startGame);
+        restartButton.addEventListener('click', startGame);
+    </script>
+</body>
+</html>
